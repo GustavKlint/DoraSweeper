@@ -349,6 +349,35 @@
             font-size: 24px;
             font-weight: bold;
         }
+
+        .instructions {
+            background: linear-gradient(145deg, #fff 0%, #fff5f8 100%);
+            border: 2px solid #ff6b9d;
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 15px;
+            max-width: 350px;
+            font-size: 14px;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .instructions-title {
+            font-weight: bold;
+            color: #ff6b9d;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 4px;
+        }
     </style>
 </head>
 <body>
@@ -375,6 +404,17 @@
         <button class="easy" onclick="newGame(300, 10)">Easy (5 min)</button>
         <button class="medium" onclick="newGame(180, 15)">Medium (3 min)</button>
         <button class="hard" onclick="newGame(60, 20)">Hard (1 min)</button>
+    </div>
+
+    <div class="instructions">
+        <div class="instructions-title">How to Play</div>
+        <ul>
+            <li><b>Tap</b> a cell to reveal it</li>
+            <li><b>Hold</b> a cell to place/remove a flag</li>
+            <li>Numbers show nearby mines</li>
+            <li>Flag all mines before time runs out!</li>
+            <li>You have 3 lives - be careful!</li>
+        </ul>
     </div>
 
     <div class="stats">
@@ -414,6 +454,7 @@
         let startingTime = 60;
         let catParty = [];
         let interruptionInterval = null;
+        let lastLongPressTime = 0; // Track when long-press happened to block click
 
         let audioContext = null;
 
@@ -746,27 +787,37 @@
                     });
 
                     // Long-press support for iOS/mobile (to flag cells)
-                    let longPressTimer;
-                    let isLongPress = false;
+                    let longPressTimer = null;
 
                     cell.addEventListener('touchstart', (e) => {
-                        isLongPress = false;
                         longPressTimer = setTimeout(() => {
-                            isLongPress = true;
-                            e.preventDefault();
+                            longPressTimer = null;
+                            lastLongPressTime = Date.now();
+                            // Vibrate if supported (haptic feedback)
+                            if (navigator.vibrate) navigator.vibrate(50);
                             handleRightClick(row, col);
-                        }, 500);
-                    }, { passive: false });
+                        }, 400);
+                    }, { passive: true });
 
                     cell.addEventListener('touchend', (e) => {
-                        clearTimeout(longPressTimer);
-                        if (isLongPress) {
-                            e.preventDefault();
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
                         }
                     });
 
                     cell.addEventListener('touchmove', () => {
-                        clearTimeout(longPressTimer);
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+                    });
+
+                    cell.addEventListener('touchcancel', () => {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
                     });
 
                     boardElement.appendChild(cell);
@@ -810,6 +861,8 @@
         }
 
         function handleClick(row, col) {
+            // Block click if it came right after a long-press (iOS fix)
+            if (Date.now() - lastLongPressTime < 300) return;
             if (gameOver || board[row][col].revealed || board[row][col].flagged) return;
 
             if (Math.random() < 0.15) {
