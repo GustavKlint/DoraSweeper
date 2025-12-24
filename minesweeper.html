@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dora's Stressful Minesweeper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #f0f0f0 0%, #ffd9e8 100%);
+            transition: background-color 0.3s;
+            position: relative;
+            overflow-x: hidden;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body.panic {
+            background: linear-gradient(135deg, #ffcccc 0%, #ff9999 100%);
+        }
+
+        .floating-cat {
+            position: fixed;
+            font-size: 40px;
+            animation: floatAround 20s infinite linear;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        @keyframes floatAround {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(100px, -50px) rotate(90deg); }
+            50% { transform: translate(200px, 0) rotate(180deg); }
+            75% { transform: translate(100px, 50px) rotate(270deg); }
+            100% { transform: translate(0, 0) rotate(360deg); }
+        }
+
+        .corner-cat {
+            position: fixed;
+            font-size: 80px;
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        .corner-cat.top-left {
+            top: 10px;
+            left: 10px;
+            animation: wiggle 3s infinite;
+        }
+
+        .corner-cat.top-right {
+            top: 10px;
+            right: 10px;
+            animation: wiggle 3s infinite 0.5s;
+        }
+
+        .corner-cat.bottom-left {
+            bottom: 10px;
+            left: 10px;
+            animation: wiggle 3s infinite 1s;
+        }
+
+        .corner-cat.bottom-right {
+            bottom: 10px;
+            right: 10px;
+            animation: wiggle 3s infinite 1.5s;
+        }
+
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        h1 {
+            text-shadow: 2px 2px 4px rgba(255, 107, 157, 0.3);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1::before {
+            content: '🐱 ';
+        }
+
+        h1::after {
+            content: ' 🐱';
+        }
+
+        h1 {
+            margin-bottom: 10px;
+        }
+
+        .dora-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: linear-gradient(145deg, #ffffff 0%, #fff0f5 100%);
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            position: relative;
+            z-index: 10;
+            border: 3px solid #ff6b9d;
+        }
+
+        .dora-container::before {
+            content: '🐾';
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            opacity: 0.3;
+        }
+
+        .dora-container::after {
+            content: '🐾';
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            opacity: 0.3;
+        }
+
+        .dora-avatar {
+            font-size: 60px;
+            animation: float 2s ease-in-out infinite;
+            filter: drop-shadow(0 0 10px rgba(255, 107, 157, 0.5));
+        }
+
+        .dora-speech {
+            flex: 1;
+        }
+
+        .dora-name {
+            font-weight: bold;
+            color: #ff6b9d;
+            margin-bottom: 5px;
+        }
+
+        .dora-message {
+            font-style: italic;
+            font-size: 16px;
+            color: #333;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .shake {
+            animation: shake 0.3s;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 10;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        button::before {
+            content: '🐾 ';
+        }
+
+        button::after {
+            content: ' 🐾';
+        }
+
+        button.easy {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+        }
+
+        button.easy:hover {
+            background: linear-gradient(145deg, #45a049, #3d8b40);
+        }
+
+        button.medium {
+            background: linear-gradient(145deg, #FF9800, #e68900);
+        }
+
+        button.medium:hover {
+            background: linear-gradient(145deg, #e68900, #cc7a00);
+        }
+
+        button.hard {
+            background: linear-gradient(145deg, #f44336, #da190b);
+        }
+
+        button.hard:hover {
+            background: linear-gradient(145deg, #da190b, #c1160a);
+        }
+
+        .stats {
+            margin-bottom: 20px;
+            font-size: 18px;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .stat-item {
+            padding: 10px 15px;
+            background: linear-gradient(145deg, #ffffff 0%, #fff5f8 100%);
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+            transition: border 0.3s;
+        }
+
+        .stat-item:hover {
+            border: 2px solid #ff6b9d;
+        }
+
+        .timer {
+            font-weight: bold;
+            color: #ff4444;
+            font-size: 24px;
+        }
+
+        .timer.warning {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .lives {
+            font-size: 24px;
+        }
+
+        #board {
+            display: inline-grid;
+            gap: 1px;
+            background-color: #999;
+            border: 4px solid #ff6b9d;
+            padding: 1px;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+            border-radius: 5px;
+        }
+
+        .cell {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(145deg, #d0d0d0, #bbbbbb);
+            border: 2px outset #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: manipulation;
+            transition: transform 0.1s;
+        }
+
+        .cell:hover {
+            background: linear-gradient(145deg, #e0e0e0, #cccccc);
+            transform: scale(1.1);
+        }
+
+        .cell.revealed {
+            background: linear-gradient(145deg, #eeeeee, #dddddd);
+            border: 1px solid #999;
+            cursor: default;
+        }
+
+        .cell.revealed:hover {
+            background: linear-gradient(145deg, #eeeeee, #dddddd);
+            transform: scale(1);
+        }
+
+        .cell.flagged {
+            background: linear-gradient(145deg, #ffeb3b, #fdd835);
+            animation: flagWave 0.5s;
+        }
+
+        @keyframes flagWave {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); }
+        }
+
+        .cell.mine {
+            background: linear-gradient(145deg, #f44336, #d32f2f);
+            animation: explode 0.5s;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .cell.number-1 { color: blue; }
+        .cell.number-2 { color: green; }
+        .cell.number-3 { color: red; }
+        .cell.number-4 { color: darkblue; }
+        .cell.number-5 { color: darkred; }
+        .cell.number-6 { color: cyan; }
+        .cell.number-7 { color: black; }
+        .cell.number-8 { color: gray; }
+
+        .game-over {
+            color: red;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .game-won {
+            color: green;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .instructions {
+            background: linear-gradient(145deg, #fff 0%, #fff5f8 100%);
+            border: 2px solid #ff6b9d;
+            border-radius: 10px;
+            padding: 12px 18px;
+            margin-bottom: 15px;
+            max-width: 350px;
+            font-size: 14px;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .instructions-title {
+            font-weight: bold;
+            color: #ff6b9d;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="corner-cat top-left">😺</div>
+    <div class="corner-cat top-right">😸</div>
+    <div class="corner-cat bottom-left">😻</div>
+    <div class="corner-cat bottom-right">😹</div>
+
+    <div class="floating-cat" id="floatingCat1" style="top: 20%; left: 10%;">😼</div>
+    <div class="floating-cat" id="floatingCat2" style="top: 60%; left: 80%; animation-delay: -5s;">😽</div>
+    <div class="floating-cat" id="floatingCat3" style="top: 40%; left: 50%; animation-delay: -10s;">😾</div>
+
+    <h1>Dora's Stressful Minesweeper</h1>
+
+    <div class="dora-container">
+        <div class="dora-avatar" id="doraAvatar">🐱</div>
+        <div class="dora-speech">
+            <div class="dora-name">Dora the Cat</div>
+            <div class="dora-message" id="doraMessage">Ready when you are... if you dare.</div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="easy" onclick="newGame(300, 10)">Easy (5 min)</button>
+        <button class="medium" onclick="newGame(180, 15)">Medium (3 min)</button>
+        <button class="hard" onclick="newGame(60, 20)">Hard (1 min)</button>
+    </div>
+
+    <div class="instructions">
+        <div class="instructions-title">How to Play</div>
+        <ul>
+            <li><b>Tap</b> a cell to reveal it</li>
+            <li><b>Hold</b> a cell to place/remove a flag</li>
+            <li>Numbers show nearby mines</li>
+            <li>Flag all mines before time runs out!</li>
+            <li>You have 3 lives - be careful!</li>
+        </ul>
+    </div>
+
+    <div class="stats">
+        <div class="stat-item">
+            <div>Timer</div>
+            <div class="timer" id="timer">60</div>
+        </div>
+        <div class="stat-item">
+            <div>Lives</div>
+            <div class="lives" id="lives">❤️❤️❤️</div>
+        </div>
+        <div class="stat-item">
+            <div>Mines</div>
+            <div id="mineCount">15</div>
+        </div>
+        <div class="stat-item">
+            <div>Flags</div>
+            <div id="flagCount">0</div>
+        </div>
+        <div class="stat-item" id="gameStatus"></div>
+    </div>
+
+    <div id="board"></div>
+
+    <script>
+        const ROWS = 10;
+        const COLS = 10;
+        const MAX_LIVES = 3;
+
+        let board = [];
+        let gameOver = false;
+        let flagCount = 0;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let lives = MAX_LIVES;
+        let currentMines = 15;
+        let startingTime = 60;
+        let catParty = [];
+        let interruptionInterval = null;
+        let lastLongPressTime = 0; // Track when long-press happened to block click
+
+        let audioContext = null;
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        // Resume audio on first user interaction (required for iOS)
+        document.addEventListener('touchstart', initAudio, { once: true });
+        document.addEventListener('click', initAudio, { once: true });
+
+        function createRandomCat() {
+            const cat = document.createElement('div');
+            const catEmojis = ['😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🐱', '🐈'];
+            cat.textContent = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+            cat.style.position = 'fixed';
+            cat.style.fontSize = (Math.random() * 30 + 20) + 'px';
+            cat.style.left = Math.random() * window.innerWidth + 'px';
+            cat.style.top = '-50px';
+            cat.style.zIndex = '5';
+            cat.style.pointerEvents = 'none';
+            cat.style.transition = 'transform 2s ease-in, top 2s ease-in';
+            document.body.appendChild(cat);
+
+            setTimeout(() => {
+                cat.style.top = window.innerHeight + 'px';
+                cat.style.transform = 'rotate(' + (Math.random() * 720 - 360) + 'deg)';
+            }, 10);
+
+            setTimeout(() => {
+                document.body.removeChild(cat);
+            }, 2000);
+        }
+
+        function startCatParty() {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => createRandomCat(), i * 100);
+            }
+        }
+
+        function doraInterruption() {
+            if (!gameOver) {
+                setDoraMessage('interruption');
+
+                // Screen shake effect
+                document.body.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    document.body.style.animation = '';
+                }, 500);
+
+                // Random cat spawns during interruption
+                if (Math.random() < 0.5) {
+                    createRandomCat();
+                    createRandomCat();
+                }
+
+                // Make the board wiggle
+                const boardElement = document.getElementById('board');
+                boardElement.style.animation = 'shake 0.3s';
+                setTimeout(() => {
+                    boardElement.style.animation = '';
+                }, 300);
+            }
+        }
+
+        function startInterruptions() {
+            // Randomly interrupt every 8-15 seconds
+            function scheduleNextInterruption() {
+                if (!gameOver) {
+                    const delay = Math.random() * 7000 + 8000; // 8-15 seconds
+                    interruptionInterval = setTimeout(() => {
+                        doraInterruption();
+                        scheduleNextInterruption();
+                    }, delay);
+                }
+            }
+            scheduleNextInterruption();
+        }
+
+        function playSound(type) {
+            if (!audioContext) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            switch(type) {
+                case 'click':
+                    oscillator.frequency.value = 800;
+                    gainNode.gain.value = 0.1;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.05);
+                    break;
+                case 'flag':
+                    oscillator.frequency.value = 600;
+                    gainNode.gain.value = 0.15;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                case 'explosion':
+                    oscillator.type = 'sawtooth';
+                    oscillator.frequency.value = 200;
+                    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.5);
+                    break;
+                case 'win':
+                    const notes = [523, 659, 784, 1047];
+                    notes.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.value = freq;
+                        gain.gain.value = 0.2;
+                        osc.start(audioContext.currentTime + i * 0.1);
+                        osc.stop(audioContext.currentTime + i * 0.1 + 0.2);
+                    });
+                    break;
+                case 'lose':
+                    const loseNotes = [400, 350, 300, 200];
+                    loseNotes.forEach((freq, i) => {
+                        const osc = audioContext.createOscillator();
+                        const gain = audioContext.createGain();
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
+                        osc.frequency.value = freq;
+                        gain.gain.value = 0.2;
+                        osc.start(audioContext.currentTime + i * 0.15);
+                        osc.stop(audioContext.currentTime + i * 0.15 + 0.15);
+                    });
+                    break;
+                case 'tick':
+                    oscillator.frequency.value = 1200;
+                    gainNode.gain.value = 0.08;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.03);
+                    break;
+                case 'warning':
+                    oscillator.type = 'square';
+                    oscillator.frequency.value = 880;
+                    gainNode.gain.value = 0.2;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.1);
+                    break;
+                case 'meow':
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(600, audioContext.currentTime);
+                    oscillator.frequency.exponentialRampToValueAtTime(800, audioContext.currentTime + 0.1);
+                    oscillator.frequency.exponentialRampToValueAtTime(500, audioContext.currentTime + 0.2);
+                    gainNode.gain.value = 0.15;
+                    oscillator.start();
+                    oscillator.stop(audioContext.currentTime + 0.2);
+                    break;
+            }
+        }
+
+        const doraMessages = {
+            start: [
+                "Ready when you are... if you dare.",
+                "Let's see if you can handle the pressure!",
+                "I've seen mice move faster than you."
+            ],
+            playing: [
+                "Tick tock, human!",
+                "My litter box needs cleaning, hurry up!",
+                "Is that really your best move?",
+                "I'm getting bored over here...",
+                "Maybe you should stick to checkers?"
+            ],
+            interruption: [
+                "HEY! Pay attention to ME!",
+                "Did you see that bird outside?!",
+                "MEOW MEOW MEOW MEOW!",
+                "I need treats RIGHT NOW!",
+                "Why are you even trying?",
+                "Look at me! LOOK AT ME!",
+                "I knocked your water bottle over. Oops.",
+                "Is that a... SQUIRREL?!",
+                "Feed me or I'll sabotage you!",
+                "You're going to click the wrong one!",
+                "Careful... or NOT! Hehehe!",
+                "I'm walking on your keyboard!",
+                "CHAOS CHAOS CHAOS!",
+                "My paws are on the mouse now!",
+                "Did I distract you? Good.",
+                "Boop! Gotcha!",
+                "Time for my 3pm zoomies!",
+                "I'M HELPING!"
+            ],
+            lowTime: [
+                "TIME IS RUNNING OUT!",
+                "PANIC MODE ACTIVATED!",
+                "You're making me nervous!",
+                "MY HEART CAN'T TAKE THIS!",
+                "FASTER FASTER FASTER!"
+            ],
+            hitMine: [
+                "YOWL! That was a mine!",
+                "Are you even trying?!",
+                "My whiskers are standing on end!",
+                "That's one of your nine lives gone!",
+                "Maybe look before you click?"
+            ],
+            win: [
+                "Well... I suppose you did okay.",
+                "Beginner's luck, obviously.",
+                "Fine, you win. Want a trophy?",
+                "I guess you're not completely hopeless."
+            ],
+            lose: [
+                "I knew you couldn't do it!",
+                "Better luck next life... oh wait.",
+                "That was embarrassing to watch.",
+                "My grandkitten could do better!"
+            ]
+        };
+
+        function setDoraMessage(category) {
+            const messages = doraMessages[category];
+            const message = messages[Math.floor(Math.random() * messages.length)];
+            document.getElementById('doraMessage').textContent = message;
+            document.getElementById('doraAvatar').classList.add('shake');
+            playSound('meow');
+
+            const catEmojis = ['😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'];
+            document.getElementById('doraAvatar').textContent = catEmojis[Math.floor(Math.random() * catEmojis.length)];
+
+            setTimeout(() => {
+                document.getElementById('doraAvatar').classList.remove('shake');
+                document.getElementById('doraAvatar').textContent = '🐱';
+            }, 300);
+        }
+
+        function updateTimer() {
+            timeLeft--;
+            document.getElementById('timer').textContent = timeLeft;
+
+            if (timeLeft <= 10) {
+                document.getElementById('timer').classList.add('warning');
+                document.body.classList.add('panic');
+                playSound('warning');
+                if (Math.random() < 0.5) {
+                    setDoraMessage('lowTime');
+                }
+            } else if (timeLeft % 5 === 0) {
+                playSound('tick');
+            }
+
+            if (timeLeft <= 0) {
+                gameOver = true;
+                clearInterval(timerInterval);
+                if (interruptionInterval) clearTimeout(interruptionInterval);
+                revealAllMines();
+                document.getElementById('gameStatus').textContent = 'TIME\'S UP!';
+                document.getElementById('gameStatus').className = 'game-over';
+                playSound('lose');
+                setDoraMessage('lose');
+            }
+        }
+
+        function updateLives() {
+            const hearts = '❤️'.repeat(lives) + '🖤'.repeat(MAX_LIVES - lives);
+            document.getElementById('lives').textContent = hearts;
+        }
+
+        function newGame(time = 60, mines = 15) {
+            board = [];
+            gameOver = false;
+            flagCount = 0;
+            timeLeft = time;
+            startingTime = time;
+            currentMines = mines;
+            lives = MAX_LIVES;
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            if (interruptionInterval) {
+                clearTimeout(interruptionInterval);
+            }
+
+            document.getElementById('flagCount').textContent = flagCount;
+            document.getElementById('mineCount').textContent = mines;
+            document.getElementById('gameStatus').textContent = '';
+            document.getElementById('gameStatus').className = '';
+            document.getElementById('timer').textContent = timeLeft;
+            document.getElementById('timer').classList.remove('warning');
+            document.body.classList.remove('panic');
+            updateLives();
+            setDoraMessage('start');
+
+            createBoard();
+
+            timerInterval = setInterval(updateTimer, 1000);
+            startInterruptions();
+        }
+
+        function createBoard() {
+            const boardElement = document.getElementById('board');
+            boardElement.innerHTML = '';
+            boardElement.style.gridTemplateColumns = `repeat(${COLS}, 30px)`;
+
+            for (let row = 0; row < ROWS; row++) {
+                board[row] = [];
+                for (let col = 0; col < COLS; col++) {
+                    board[row][col] = {
+                        mine: false,
+                        revealed: false,
+                        flagged: false,
+                        adjacentMines: 0
+                    };
+
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => handleClick(row, col));
+                    cell.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        handleRightClick(row, col);
+                    });
+
+                    // Long-press support for iOS/mobile (to flag cells)
+                    let longPressTimer = null;
+
+                    cell.addEventListener('touchstart', (e) => {
+                        longPressTimer = setTimeout(() => {
+                            longPressTimer = null;
+                            lastLongPressTime = Date.now();
+                            // Vibrate if supported (haptic feedback)
+                            if (navigator.vibrate) navigator.vibrate(50);
+                            handleRightClick(row, col);
+                        }, 400);
+                    }, { passive: true });
+
+                    cell.addEventListener('touchend', (e) => {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+                    });
+
+                    cell.addEventListener('touchmove', () => {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+                    });
+
+                    cell.addEventListener('touchcancel', () => {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+                    });
+
+                    boardElement.appendChild(cell);
+                }
+            }
+
+            placeMines();
+            calculateAdjacentMines();
+        }
+
+        function placeMines() {
+            let minesPlaced = 0;
+            while (minesPlaced < currentMines) {
+                const row = Math.floor(Math.random() * ROWS);
+                const col = Math.floor(Math.random() * COLS);
+                if (!board[row][col].mine) {
+                    board[row][col].mine = true;
+                    minesPlaced++;
+                }
+            }
+        }
+
+        function calculateAdjacentMines() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (!board[row][col].mine) {
+                        let count = 0;
+                        for (let dr = -1; dr <= 1; dr++) {
+                            for (let dc = -1; dc <= 1; dc++) {
+                                const newRow = row + dr;
+                                const newCol = col + dc;
+                                if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                                    if (board[newRow][newCol].mine) count++;
+                                }
+                            }
+                        }
+                        board[row][col].adjacentMines = count;
+                    }
+                }
+            }
+        }
+
+        function handleClick(row, col) {
+            // Block click if it came right after a long-press (iOS fix)
+            if (Date.now() - lastLongPressTime < 300) return;
+            if (gameOver || board[row][col].revealed || board[row][col].flagged) return;
+
+            if (Math.random() < 0.15) {
+                setDoraMessage('playing');
+            }
+
+            revealCell(row, col);
+
+            if (board[row][col].mine) {
+                playSound('explosion');
+                lives--;
+                updateLives();
+                setDoraMessage('hitMine');
+                createRandomCat();
+
+                if (lives <= 0) {
+                    gameOver = true;
+                    clearInterval(timerInterval);
+                    if (interruptionInterval) clearTimeout(interruptionInterval);
+                    revealAllMines();
+                    document.getElementById('gameStatus').textContent = 'Game Over!';
+                    document.getElementById('gameStatus').className = 'game-over';
+                    playSound('lose');
+                    setTimeout(() => setDoraMessage('lose'), 500);
+                } else {
+                    setTimeout(() => {
+                        const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+                        cell.classList.remove('mine');
+                        cell.classList.remove('revealed');
+                        cell.textContent = '';
+                        board[row][col].revealed = false;
+                    }, 1000);
+                }
+            } else {
+                playSound('click');
+                if (board[row][col].adjacentMines === 0) {
+                    revealAdjacentCells(row, col);
+                }
+                checkWin();
+            }
+        }
+
+        function handleRightClick(row, col) {
+            if (gameOver || board[row][col].revealed) return;
+
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            board[row][col].flagged = !board[row][col].flagged;
+
+            if (board[row][col].flagged) {
+                cell.classList.add('flagged');
+                cell.textContent = '🚩';
+                flagCount++;
+                playSound('flag');
+            } else {
+                cell.classList.remove('flagged');
+                cell.textContent = '';
+                flagCount--;
+                playSound('click');
+            }
+
+            document.getElementById('flagCount').textContent = flagCount;
+        }
+
+        function revealCell(row, col) {
+            const cell = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+            board[row][col].revealed = true;
+            cell.classList.add('revealed');
+
+            if (board[row][col].mine) {
+                cell.classList.add('mine');
+                cell.textContent = '💣';
+            } else if (board[row][col].adjacentMines > 0) {
+                cell.textContent = board[row][col].adjacentMines;
+                cell.classList.add(`number-${board[row][col].adjacentMines}`);
+            }
+        }
+
+        function revealAdjacentCells(row, col) {
+            for (let dr = -1; dr <= 1; dr++) {
+                for (let dc = -1; dc <= 1; dc++) {
+                    const newRow = row + dr;
+                    const newCol = col + dc;
+                    if (newRow >= 0 && newRow < ROWS && newCol >= 0 && newCol < COLS) {
+                        if (!board[newRow][newCol].revealed && !board[newRow][newCol].flagged) {
+                            revealCell(newRow, newCol);
+                            if (board[newRow][newCol].adjacentMines === 0) {
+                                revealAdjacentCells(newRow, newCol);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function revealAllMines() {
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (board[row][col].mine) {
+                        revealCell(row, col);
+                    }
+                }
+            }
+        }
+
+        function checkWin() {
+            let revealedCount = 0;
+            for (let row = 0; row < ROWS; row++) {
+                for (let col = 0; col < COLS; col++) {
+                    if (board[row][col].revealed && !board[row][col].mine) revealedCount++;
+                }
+            }
+
+            if (revealedCount === ROWS * COLS - currentMines) {
+                gameOver = true;
+                clearInterval(timerInterval);
+                if (interruptionInterval) clearTimeout(interruptionInterval);
+                document.getElementById('gameStatus').textContent = 'You Win!';
+                document.getElementById('gameStatus').className = 'game-won';
+                document.body.classList.remove('panic');
+                playSound('win');
+                startCatParty();
+                setTimeout(() => setDoraMessage('win'), 400);
+            }
+        }
+
+        newGame(180, 15);
+    </script>
+</body>
+</html>
